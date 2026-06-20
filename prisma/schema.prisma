@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String?
+  createdAt DateTime @default(now())
+
+  workspacesOwned   Workspace[]       @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
+  assignedTasks     Task[]            @relation("TaskAssignee")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  plan      String   @default("FREE")
+  createdAt DateTime @default(now())
+
+  ownerId   String
+  owner     User     @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+
+  members      WorkspaceMember[]
+  projects     Project[]
+  inviteTokens InviteToken[]
+}
+
+model WorkspaceMember {
+  id   String @id @default(cuid())
+  role String @default("MEMBER")
+
+  userId      String
+  workspaceId String
+
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  tasks Task[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("TODO")
+  priority    String    @default("MEDIUM")
+  dueDate     DateTime?
+
+  assigneeId String?
+  projectId  String
+
+  assignee User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
+}
+
+model InviteToken {
+  id          String   @id @default(cuid())
+  email       String
+  token       String
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
