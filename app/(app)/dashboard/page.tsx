@@ -20,11 +20,23 @@ export default async function DashboardPage() {
     },
   });
 
+  if (!workspaceMember) {
+    redirect("/login");
+  }
+  const projects = await prisma.project.findMany({
+    where: { workspaceId: workspaceMember.workspaceId },
+  });
+
   return (
     <div>
       <h1>Dashboard</h1>
-      {workspaceMember?.workspace?.name}
-      {workspaceMember?.workspace?.plan}
+      <p>{workspaceMember.workspace.name}</p>
+      <p>Plan: {workspaceMember.workspace.plan}</p>
+      {projects.length === 0 ? (
+        <p>No projects yet</p>
+      ) : (
+        projects.map((project) => <div key={project.id}>{project.name}</div>)
+      )}
     </div>
   );
 }
