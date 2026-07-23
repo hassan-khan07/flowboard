@@ -1,12 +1,27 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-// import { ApiResponse } from "@/types/apiResponse";
+import { signUpSchema } from "@/schemas/signUpSchema";
+import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 
 export async function POST(request: Request) {
   try {
-    const { email, password, name } = await request.json();
+    const body = await request.json();
+
+    const result = signUpSchema.safeParse(body);
+    if (!result.success) {
+      return Response.json(
+        {
+          success: false,
+          message: result.error.issues[0]?.message || "Invalid input",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { email, password, name } = result.data;
+
     const existingUserByEmail = await prisma.user.findUnique({
-      where: { email: email },
+      where: { email },
     });
     if (existingUserByEmail) {
       return Response.json(
@@ -17,29 +32,50 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
     const hashPassword = await bcrypt.hash(password, 10);
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        password: hashPassword,
-        name,
-      },
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          password: hashPassword,
+          name,
+        },
+      });
+
+      const newWorkspace = await tx.workspace.create({
+        data: {
+          name: newUser.name?.concat(" workspace") || "My Workspace",
+          ownerId: newUser.id,
+        },
+      });
+
+      await tx.workspaceMember.create({
+        data: {
+          userId: newUser.id,
+          workspaceId: newWorkspace.id,
+          role: "OWNER",
+        },
+      });
+      return newUser;
     });
 
-    const newWorkspace = await prisma.workspace.create({
-      data: {
-        name: newUser.name?.concat(" workspace") || "My Workspace",
-        ownerId: newUser.id,
-      },
-    });
+    const emailResponse = await sendVerificationEmail(
+      newUser.name || "there",
+      newUser.email,
+      newUser.id,
+    );
 
-    const newWorkspaceMember = await prisma.workspaceMember.create({
-      data: {
-        userId: newUser.id,
-        workspaceId: newWorkspace.id,
-        role: "OWNER",
-      },
-    });
+    if (!emailResponse.success) {
+      return Response.json(
+        {
+          success: false,
+          message: emailResponse.message,
+        },
+        { status: 500 },
+      );
+    }
 
     return Response.json({
       success: true,

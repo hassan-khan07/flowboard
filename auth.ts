@@ -36,6 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
+          isVerified: user.emailVerified,
         };
       },
     }),
@@ -45,11 +46,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.isVerified = user.isVerified;
       }
       return token;
     },
     session({ session, token }) {
       session.user.id = token.id as string;
+      session.user.isVerified = token.isVerified as boolean;
       return session;
     },
   },
