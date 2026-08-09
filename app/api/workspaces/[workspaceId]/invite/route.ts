@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { sendInviteEmail } from "@/helpers/sendInviteEmail";
 
 export async function POST(
   request: NextRequest,
@@ -70,4 +71,46 @@ export async function POST(
       );
     }
   }
+
+  const invite = await prisma.inviteToken.upsert({
+    where: {
+      email_workspaceId: {
+        email: email,
+        workspaceId: workspaceId,
+      },
+    },
+    update: {
+      token: randomToken,
+      expiresAt: expiresAt,
+      used: false,
+      role: role,
+    },
+    create: {
+      email: email,
+      workspaceId: workspaceId,
+      token: randomToken,
+      expiresAt: expiresAt,
+      used: false,
+      role: role,
+    },
+  });
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+  });
+
+  const emailResult = await sendInviteEmail(
+    workspace?.name || "the workspace",
+    email,
+    role,
+    invite.token,
+  );
+
+  if (!emailResult.success) {
+    return Response.json(
+      { success: false, message: emailResult.message },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ success: true, message: "Invite sent" });
 }

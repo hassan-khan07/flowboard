@@ -8,7 +8,7 @@ import { signUpSchema } from "@/schemas/signUpSchema";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Controller } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
 import * as z from "zod";
@@ -21,12 +21,15 @@ type FormData = z.infer<typeof signUpSchema>;
 export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams?.get("token");
+  const email = searchParams?.get("email");
 
   const { handleSubmit, control } = useForm<FormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       name: "",
-      email: "",
+      email: email || "",
       password: "",
     },
   });
@@ -45,17 +48,19 @@ export default function SignupPage() {
   const strengthLabel = ["Too weak", "Weak", "Okay", "Good", "Strong"][
     strength
   ];
+
   const strengthColor =
     strength <= 1
       ? "bg-red-500"
       : strength <= 2
         ? "bg-yellow-500"
         : "bg-green-500";
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
 
     try {
-      await axios.post("/api/signup", data);
+      await axios.post("/api/signup", { ...data, token });
 
       const result = await signIn("credentials", {
         email: data.email,
@@ -217,6 +222,7 @@ export default function SignupPage() {
                     {...field}
                     type="email"
                     placeholder="hassan@team.com"
+                    readOnly={!!token}
                     className="h-10 rounded-[9px] border-stone-200 bg-white text-[13px] placeholder:text-stone-300 focus-visible:border-orange-500 focus-visible:ring-orange-500/15 focus-visible:ring-[3px]"
                   />
                   {fieldState.invalid && (

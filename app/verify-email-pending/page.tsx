@@ -11,8 +11,8 @@ export default async function VerifyEmailPendingPage() {
 
   return (
     <div>
-      <p>Please check your inbox to confirm your email.</p>
-      <p>{`A verification email was sent to ${session?.user?.email}.`}</p>
+      <p>Almost there — check your inbox to confirm your email address.</p>
+      <p>We sent a link to {session?.user?.email}.</p>
       <ResendVerificationButton />
     </div>
   );

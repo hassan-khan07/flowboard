@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { LogoutButton } from "@/components/LogoutButton";
 import {
   SquareKanban,
   Home,
@@ -34,9 +35,8 @@ export default async function DashboardPage() {
   });
 
   if (!workspaceMember) {
-    redirect("/login");
+    redirect("/no-workspace");
   }
-
   const projects = await prisma.project.findMany({
     where: { workspaceId: workspaceMember.workspaceId },
   });
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
           </a>
 
           <a
-            href="#"
+            href={`/workspaces/${workspaceMember.workspaceId}/members`}
             className="flex items-center justify-between px-2 py-1.5 rounded-[7px] hover:bg-stone-100 transition-colors"
           >
             <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
 
         {/* Plan card */}
         {workspaceMember.workspace.plan === "FREE" && (
-          <div className="mt-auto mx-3 p-3 rounded-[10px] bg-stone-900">
+          <div className="mx-3 p-3 rounded-[10px] bg-stone-900 mb-3">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Sparkles className="text-orange-500" size={14} />
               <span className="text-stone-50 text-xs font-medium">
@@ -144,6 +144,10 @@ export default async function DashboardPage() {
             </button>
           </div>
         )}
+        
+        <div className="mt-auto px-3">
+          <LogoutButton />
+        </div>
       </aside>
 
       {/* Main content */}

@@ -9,7 +9,12 @@ export default async function VerifyEmailPage({
   const { token } = await searchParams;
 
   if (!token) {
-    return <div>Invalid verification link. No token provided.</div>;
+    return (
+      <div>
+        This verification link looks incomplete. Please check the link and try
+        again.
+      </div>
+    );
   }
 
   const emailVerificationToken = await prisma.emailVerificationToken.findUnique(
@@ -20,21 +25,23 @@ export default async function VerifyEmailPage({
   );
 
   if (!emailVerificationToken) {
-    return <div>Invalid or expired verification link.</div>;
-  }
-
-  if (emailVerificationToken.used) {
     return (
       <div>
-        This link has already been used. Your email may already be verified —
-        try logging in.
+        We couldn't find this verification link. It may have already been used
+        or the link is incorrect.
       </div>
     );
   }
 
+  if (emailVerificationToken.used) {
+    return <div>This email is already verified. You can log in anytime.</div>;
+  }
+
   if (emailVerificationToken.expiresAt < new Date()) {
     return (
-      <div>This verification link has expired. Please request a new one.</div>
+      <div>
+        This verification link has expired. Log in to request a new one.
+      </div>
     );
   }
 
