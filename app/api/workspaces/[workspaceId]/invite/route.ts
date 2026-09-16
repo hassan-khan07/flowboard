@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sendInviteEmail } from "@/helpers/sendInviteEmail";
 
 export async function POST(
@@ -13,7 +13,7 @@ export async function POST(
   const session = await auth();
 
   if (!session?.user) {
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "Unauthorized",
@@ -28,7 +28,7 @@ export async function POST(
   });
 
   if (requesterMembership_roleCheck === null) {
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "User is not a member of this workspace",
@@ -38,13 +38,41 @@ export async function POST(
   }
 
   if (requesterMembership_roleCheck.role === "MEMBER") {
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "Only Owner or Admin can perform this action",
       },
       { status: 403 },
     );
+  }
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+  });
+
+  if (!workspace) {
+    return NextResponse.json(
+      { message: "Workspace not found." },
+      { status: 404 },
+    );
+  }
+
+  if (workspace.plan === "FREE") {
+    const [memberCount, pendingCount] = await Promise.all([
+      prisma.workspaceMember.count({ where: { workspaceId } }),
+      prisma.inviteToken.count({ where: { workspaceId, used: false } }),
+    ]);
+
+    if (memberCount + pendingCount >= 3) {
+      return NextResponse.json(
+        {
+          message:
+            "This workspace has reached the Free plan's 3-member limit. Upgrade to Pro to invite more members.",
+        },
+        { status: 409 },
+      );
+    }
   }
 
   const body = await request.json();
@@ -62,7 +90,7 @@ export async function POST(
     });
 
     if (inviteeMembership) {
-      return Response.json(
+      return NextResponse.json(
         {
           success: false,
           message: "User is already a member of this workspace",
@@ -94,9 +122,6 @@ export async function POST(
       role: role,
     },
   });
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-  });
 
   const emailResult = await sendInviteEmail(
     workspace?.name || "the workspace",
@@ -106,11 +131,11 @@ export async function POST(
   );
 
   if (!emailResult.success) {
-    return Response.json(
+    return NextResponse.json(
       { success: false, message: emailResult.message },
       { status: 500 },
     );
   }
 
-  return Response.json({ success: true, message: "Invite sent" });
+  return NextResponse.json({ success: true, message: "Invite sent" });
 }

@@ -5,6 +5,7 @@ import { InviteMemberForm } from "@/components/InviteMemberForm";
 import { RevokeInviteButton } from "@/components/RevokeInviteButton";
 import { RemoveMemberButton } from "@/components/RemoveMemberButton";
 import { Clock } from "lucide-react";
+import { UpdateRoleButton } from "@/components/UpdateRoleButton";
 
 export default async function MembersPage({
   params,
@@ -78,17 +79,31 @@ export default async function MembersPage({
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-[11px] font-medium text-stone-500 bg-stone-100 rounded-full px-2.5 py-1">
-                  {member.role}
-                </span>
-                {canInvite &&
-                  member.role !== "OWNER" &&
-                  member.userId !== session.user.id && (
-                    <RemoveMemberButton
+                <div className="flex items-center gap-3">
+                  {member.role === "OWNER" ? (
+                    <span className="text-[11px] font-medium text-stone-500 bg-stone-100 rounded-full px-2.5 py-1">
+                      {member.role}
+                    </span>
+                  ) : canInvite ? (
+                    <UpdateRoleButton
                       workspaceId={workspaceId}
                       memberId={member.id}
+                      currentRole={member.role}
                     />
+                  ) : (
+                    <span className="text-[11px] font-medium text-stone-500 bg-stone-100 rounded-full px-2.5 py-1">
+                      {member.role}
+                    </span>
                   )}
+                  {canInvite &&
+                    member.role !== "OWNER" &&
+                    member.userId !== session.user.id && (
+                      <RemoveMemberButton
+                        workspaceId={workspaceId}
+                        memberId={member.id}
+                      />
+                    )}
+                </div>
               </div>
             </div>
           ))}
