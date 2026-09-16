@@ -16,12 +16,12 @@ model User {
   createdAt DateTime @default(now())
   emailVerified  Boolean  @default(false) 
 
-   emailVerificationToken EmailVerificationToken?
+  emailVerificationToken EmailVerificationToken?
 
   workspacesOwned   Workspace[]       @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
   assignedTasks     Task[]            @relation("TaskAssignee")
- 
+  lastModifiedTasks Task[] @relation("TaskLastModifier")
 }
 
 model Workspace {
@@ -32,6 +32,9 @@ model Workspace {
 
   ownerId   String
   owner     User     @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
 
   members      WorkspaceMember[]
   projects     Project[]
@@ -67,12 +70,16 @@ model Task {
   status      String    @default("TODO")
   priority    String    @default("MEDIUM")
   dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  assigneeId  String?
+  projectId   String
 
-  assigneeId String?
-  projectId  String
+  lastModifiedById String?
+  lastModifiedAt   DateTime?
 
-  assignee User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  project  Project  @relation(fields: [projectId], references: [id])
+  assignee     User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  lastModifier User?    @relation("TaskLastModifier", fields: [lastModifiedById], references: [id])
+  project      Project  @relation(fields: [projectId], references: [id])
 }
 
 model InviteToken {
