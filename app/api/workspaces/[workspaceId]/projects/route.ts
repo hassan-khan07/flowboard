@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const createProjectSchema = z.object({
@@ -42,6 +42,32 @@ export async function POST(
       },
       { status: 403 },
     );
+  }
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+  });
+
+  if (!workspace) {
+    return NextResponse.json(
+      { message: "Workspace not found." },
+      { status: 404 },
+    );
+  }
+
+  if (workspace.plan === "FREE") {
+    const projectCount = await prisma.project.count({
+      where: { workspaceId },
+    });
+
+    if (projectCount >= 1) {
+      return NextResponse.json(
+        {
+          message:
+            "You cannot add more than one project on the Free plan. Upgrade to Pro for unlimited projects.",
+        },
+        { status: 409 },
+      );
+    }
   }
 
   const body = await request.json();
