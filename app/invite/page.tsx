@@ -55,7 +55,9 @@ export default async function InvitePage({
       //   You've been invited to join as {invite.role}. Sign in or create an
       //   account with {invite.email} to accept.
       // </div>
-      redirect(`/signup?token=${token}&email=${invite.email}`)
+      redirect(
+        `/signup?token=${token}&email=${encodeURIComponent(invite.email)}`,
+      )
     );
   }
 
