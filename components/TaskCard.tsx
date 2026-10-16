@@ -128,6 +128,7 @@ export default function TaskCard({
       <div
         ref={setNodeRef}
         style={style}
+        data-testid={`task-${task.id}`}
         {...attributes}
         {...listeners}
         className={`group relative select-none rounded-lg border p-3 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-grab active:cursor-grabbing ${
@@ -161,6 +162,7 @@ export default function TaskCard({
         <button
           onClick={openEdit}
           onPointerDown={(e) => e.stopPropagation()}
+          aria-label="Edit task"
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-stone-500 hover:text-orange-400 transition-opacity cursor-pointer"
         >
           <Pencil size={13} />
@@ -225,6 +227,7 @@ export default function TaskCard({
               <button
                 onClick={handleDelete}
                 disabled={loading}
+                aria-label="Delete task"
                 className="h-9 px-3 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Trash2 size={15} />

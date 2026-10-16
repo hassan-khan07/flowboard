@@ -34,6 +34,7 @@ export default function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
+      data-testid={`column-${status}`}
       className={`flex w-72 shrink-0 flex-col rounded-lg border-t-2 bg-stone-900 p-3 min-h-[420px] ${accent}`}
     >
       <div className="mb-3 flex items-center justify-between px-1">

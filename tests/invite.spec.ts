@@ -76,7 +76,7 @@ test.describe("Invite flow", () => {
   }) => {
     test.setTimeout(90000);
 
-    // 1. Owner logs in through the UI
+    // Owner logs in through the UI
     await page.goto("/login");
     await page.getByPlaceholder("hassan@team.com").fill(OWNER_EMAIL);
     await page.getByPlaceholder("••••••••").fill(OWNER_PASSWORD);
@@ -85,7 +85,7 @@ test.describe("Invite flow", () => {
       timeout: 20000,
     });
 
-    // 2. Owner sends an invite as Admin
+    // Owner sends an invite as Admin
     await page.goto(`/workspaces/${workspaceId}/members`);
     await page.getByPlaceholder("teammate@company.com").fill(INVITEE_EMAIL);
     await page.getByRole("combobox").click();
@@ -95,7 +95,7 @@ test.describe("Invite flow", () => {
     await expect(page.getByText(INVITEE_EMAIL)).toBeVisible({ timeout: 15000 });
     await expect(page.getByText("invited as admin")).toBeVisible();
 
-    // 3. Check the invite row in the database
+    // Check the invite row in the database
     const invite = await prisma.inviteToken.findFirst({
       where: { email: INVITEE_EMAIL, workspaceId },
     });
@@ -103,7 +103,7 @@ test.describe("Invite flow", () => {
     expect(invite!.role).toBe("ADMIN");
     expect(invite!.used).toBe(false);
 
-    // 4. Invitee opens the link in a completely fresh browser
+    //  Invitee opens the link in a completely fresh browser
     const inviteeContext = await browser.newContext({ baseURL: BASE_URL });
     const inviteePage = await inviteeContext.newPage();
 
@@ -114,7 +114,7 @@ test.describe("Invite flow", () => {
     await expect(emailInput).toHaveValue(INVITEE_EMAIL);
     await expect(emailInput).not.toBeEditable();
 
-    // 5. Invitee signs up
+    //  Invitee signs up
     await inviteePage.getByPlaceholder("Hassan Khan").fill(INVITEE_NAME);
     await inviteePage
       .getByPlaceholder("At least 8 characters")
@@ -126,7 +126,7 @@ test.describe("Invite flow", () => {
       { timeout: 30000 },
     );
 
-    // 6. Check the database
+    // Check the database
     const invitee = await prisma.user.findUnique({
       where: { email: INVITEE_EMAIL },
     });
