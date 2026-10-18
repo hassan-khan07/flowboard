@@ -4,11 +4,12 @@ import { prisma } from "../lib/prisma";
 
 const OWNER_EMAIL = "e2e-billing-owner@example.com";
 const ADMIN_EMAIL = "e2e-billing-admin@example.com";
+const OUTSIDER_EMAIL = "e2e-billing-outsider@example.com";
 const PASSWORD = "Test@12345";
 
 async function cleanup() {
   const users = await prisma.user.findMany({
-    where: { email: { in: [OWNER_EMAIL, ADMIN_EMAIL] } },
+    where: { email: { in: [OWNER_EMAIL, ADMIN_EMAIL, OUTSIDER_EMAIL] } },
     select: { id: true },
   });
   const userIds = users.map((u) => u.id);
@@ -57,6 +58,16 @@ test.describe("Billing", () => {
       data: {
         email: ADMIN_EMAIL,
         name: "E2E Billing Admin",
+        password: hash,
+        emailVerified: true,
+      },
+    });
+
+    // Outsider: a real user who is NOT a member of the workspace
+    await prisma.user.create({
+      data: {
+        email: OUTSIDER_EMAIL,
+        name: "E2E Outsider",
         password: hash,
         emailVerified: true,
       },
@@ -139,5 +150,20 @@ test.describe("Billing", () => {
     await expect(
       page.getByRole("main").getByRole("button", { name: "Upgrade to Pro" }),
     ).toHaveCount(0);
+  });
+
+  test("a user who is not a member cannot open the billing page", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await page.getByPlaceholder("hassan@team.com").fill(OUTSIDER_EMAIL);
+    await page.getByPlaceholder("••••••••").fill(PASSWORD);
+    await page.getByRole("button", { name: "Log in" }).click();
+    await expect(page).toHaveURL(/no-workspace/, { timeout: 20000 });
+
+    await page.goto(`/workspaces/${workspaceId}/billing`);
+
+    await expect(page).toHaveURL(/no-workspace/, { timeout: 15000 });
+    await expect(page.getByText("Current plan")).toHaveCount(0);
   });
 });
