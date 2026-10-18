@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { sendInviteEmail } from "@/helpers/sendInviteEmail";
+import { inviteSchema } from "@/schemas/inviteSchema";
 
 export async function POST(
   request: NextRequest,
@@ -76,7 +77,20 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { email, role } = body;
+  const parsed = inviteSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Invalid input",
+      },
+      { status: 400 },
+    );
+  }
+
+  const { email, role } = parsed.data;
+
   const randomToken = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
 
