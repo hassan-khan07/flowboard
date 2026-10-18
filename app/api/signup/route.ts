@@ -75,6 +75,17 @@ export async function POST(request: Request) {
         );
       }
 
+      if (inviteToken.email.toLowerCase() !== email.toLowerCase()) {
+        return Response.json(
+          {
+            success: false,
+            message:
+              "This invite was sent to a different email address. Please sign up with the email the invite was sent to.",
+          },
+          { status: 400 },
+        );
+      }
+
       await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
           data: {
