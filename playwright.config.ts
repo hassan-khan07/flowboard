@@ -25,7 +25,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npx dotenv -e .env.test -- npm run dev",
+    command: process.env.CI
+      ? "npm run dev"
+      : "npx dotenv -e .env.test -- npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: false,
     timeout: 120000,
