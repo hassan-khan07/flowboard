@@ -34,7 +34,10 @@ export default function KanbanBoard({
   }, [tasks]);
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:4000");
+    socketRef.current = io(
+      process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000",
+    );
+
     socketRef.current.on(
       "task-moved",
       (data: { taskId: string; newStatus: string }) => {
