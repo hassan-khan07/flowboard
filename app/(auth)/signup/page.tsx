@@ -15,10 +15,11 @@ import * as z from "zod";
 import Link from "next/link";
 // import { LayoutKanban, ArrowRight } from "lucide-react";
 import { SquareKanban, ArrowRight } from "lucide-react";
+import { Suspense } from "react";
 
 type FormData = z.infer<typeof signUpSchema>;
 
-export default function SignupPage() {
+function SignupForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -300,5 +301,13 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }
