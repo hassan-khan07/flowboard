@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FlowBoard
 
-## Getting Started
+A full-stack SaaS project management tool (simplified Linear/Trello). Teams create workspaces, invite members with roles, manage tasks on a real-time Kanban board, and upgrade to a Pro plan through Stripe.
 
-First, run the development server:
+**Live demo:** https://flowboard-zeta-dusky.vercel.app
+**Socket.io server repo:** https://github.com/hassan-khan07/flowboard-socket-server
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+> Billing runs in Stripe **test mode**. Use card `4242 4242 4242 4242`, any future date, any CVC. No real money is charged.
+>
+> Real-time sync depends on a separately hosted Socket.io server (Railway trial plan). If it is offline, the app still works fully; other users just need to refresh to see task moves.
+
+## Screenshots
+
+<!-- Add after taking them: board with drag in progress, members page, billing page -->
+<!-- ![Kanban board](docs/board.png) -->
+<!-- ![Demo](docs/demo.gif) -->
+
+## Features
+
+- **Auth:** email/password signup and login (NextAuth v5), email verification via Resend
+- **Workspaces and roles:** Owner / Admin / Member, enforced on the server for every mutating route
+- **Invites:** token-based email invites with a role; invitees join the existing workspace
+- **Kanban board:** drag and drop (dnd-kit), task create/edit/delete, "last updated by" tracking
+- **Real-time sync:** Socket.io pushes task moves to other connected users
+- **Billing:** Stripe Checkout, webhooks, Free vs Pro plan limits (1 project and 3 members on Free)
+
+## Tech stack
+
+| Area       | Tools                                         |
+| ---------- | --------------------------------------------- |
+| Framework  | Next.js 16 (App Router), TypeScript, React 19 |
+| Database   | PostgreSQL (Neon), Prisma 5                   |
+| Auth       | NextAuth v5 (Credentials, JWT)                |
+| UI         | Tailwind CSS v4, shadcn/ui, dnd-kit           |
+| Real-time  | Socket.io (standalone server on Railway)      |
+| Payments   | Stripe Checkout + webhooks                    |
+| Email      | Resend + React Email                          |
+| Validation | Zod                                           |
+| Testing    | Vitest, Playwright                            |
+| CI/CD      | GitHub Actions, Vercel                        |
+
+## Architecture
+
+```
+Browser ── Next.js on Vercel ── PostgreSQL (Neon, flowboard_prod)
+   │              │
+   │              └── Stripe (Checkout, webhooks)
+   └── Socket.io server on Railway (task-moved events)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The Socket.io server runs separately because Vercel's serverless model cannot host long-lived connections.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Vitest (32 tests):** integration tests that call route handlers directly against a separate Neon database (`flowboard_test`). Auth and Stripe are mocked; the database is real, so constraints and permissions are actually exercised.
+- **Playwright (11 tests):** end-to-end flows: signup, invite, Kanban (drag, edit, role-based delete), and billing/Stripe Checkout.
+- **GitHub Actions:** every push runs both suites against the test database.
 
-## Learn More
+Writing these tests surfaced real bugs, all fixed:
 
-To learn more about Next.js, take a look at the following resources:
+- Invite API accepted `role: "OWNER"` and invalid emails (validation existed only in the form)
+- Invite signup did not check that the email matched the invited email
+- `proxy.ts` matcher used `/workspace` instead of `/workspaces`, so unverified users were not blocked
+- Invite redirect dropped `+` from emails (missing `encodeURIComponent`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Run locally
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git clone https://github.com/hassan-khan07/flowboard.git
+cd flowboard
+npm install
+```
 
-## Deploy on Vercel
+Create `.env` with: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, `APP_URL`, `NEXT_PUBLIC_APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID`. Optionally set `NEXT_PUBLIC_SOCKET_URL` (defaults to `http://localhost:4000`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npx prisma migrate deploy
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For real-time sync, also run the socket server (separate repo) with `npm start` on port 4000.
+
+```bash
+npm test          # Vitest
+npm run test:e2e  # Playwright (needs a test database)
+```
