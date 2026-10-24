@@ -84,3 +84,9 @@ For real-time sync, also run the socket server (separate repo) with `npm start` 
 npm test          # Vitest
 npm run test:e2e  # Playwright (needs a test database)
 ```
+
+**Demo login** (shared Admin account on a sample workspace):
+Email: `delivered+flowboard-demo@resend.dev`
+Password: `12345678`
+
+The demo user is an Admin, so it can use the board, tasks, projects and invites, but billing is owner-only (this is the role-based access control in action). Please don't change the password. You can also sign up with your own email.
